@@ -1,6 +1,8 @@
-from dictionary_builder import DictionaryBuilder
-import numpy as np
 import time
+
+import numpy as np
+
+from dictionary_builder import DictionaryBuilder
 
 DOCUMENT_FILE = "data/199801_clear_1.txt"
 DOCUMENT_FILE_TEST = "data/small_data_for_test.txt"  # datafile for testing
@@ -10,7 +12,6 @@ class DocSimilarityCalculator:
     def __init__(self, datafile):
         self._word_dict, self._doc_list = DictionaryBuilder(datafile).build_dictionary()
         self._num_doc = len(self._doc_list)
-        # self._max_doc_len = self.max_doc_length()
         self.doc_frequency = self.cal_doc_frequency()
         self.word_frequency_list = self.word_frequency_list()
         self.all_docs_vector = self.build_doc_vector()
@@ -29,14 +30,26 @@ class DocSimilarityCalculator:
         return word_frequency_list
 
     def build_doc_vector(self):
-        """use dict structure to save the doc vector"""
+        """
+        use dict structure to save the doc vector,
+        and we only reserve words that take up 80% tf-idf weights
+        """
         all_docs_vector = []
         for doc_idx, doc in enumerate(self._doc_list):
             doc_vector_dict = dict()
             for word in doc:
                 word_tf_idf = self.cal_tf_idf(word, self.word_frequency_list[doc_idx])
                 doc_vector_dict[word] = word_tf_idf
-            all_docs_vector.append(doc_vector_dict)
+            sorted_doc_vector_dict = dict(sorted(doc_vector_dict.items(), key=lambda d: d[1], reverse=True))
+            # reserve words which take up top 80% tf-idf weights
+            sum_weights = 0
+            total_weights = sum(sorted_doc_vector_dict.values()) * 0.8
+            doc_vector_dict_reserved = dict()
+            for key, value in sorted_doc_vector_dict.items():
+                if sum_weights <= total_weights:
+                    doc_vector_dict_reserved.update({key: value})
+                    sum_weights += value
+            all_docs_vector.append(doc_vector_dict_reserved)
         return all_docs_vector
 
     def save_doc_vec_l2norm(self):
@@ -112,6 +125,21 @@ class DocSimilarityCalculator:
         word_doc_frequency_dict = dict(sort_list)
         return word_doc_frequency_dict
 
+    def write_vec_to_file(self, file, vec):
+        np.savetxt(file, vec)
+
+    def analyze_result(self, vec_file: str, doc_id: int):
+        """analyze similarity calculation result, print the most similar doc to doc_id"""
+        doc_sim_vec = np.loadtxt(vec_file)
+        sim_doc_idx = np.argsort(-doc_sim_vec[doc_id])
+        print("base doc:")
+        print(self._doc_list[doc_id])
+        # most similar to doc itself, so index from 1
+        print("the most similar doc index: ", sim_doc_idx[1:4])
+        print("they are: ")
+        for i in sim_doc_idx[1:4]:
+            print(self._doc_list[i])
+
 
 if __name__ == '__main__':
     doc_similarity = DocSimilarityCalculator(DOCUMENT_FILE)
@@ -139,5 +167,7 @@ if __name__ == '__main__':
     # print(cosine_distance)
 
     # test cal_all_docs_similarity
-    all_docs_similarity = doc_similarity.cal_all_docs_similarity()
-    print(all_docs_similarity)
+    # all_docs_similarity = doc_similarity.cal_all_docs_similarity()
+    # print(all_docs_similarity)
+    # doc_similarity.write_vec_to_file("doc_similarity_vec.txt", all_docs_similarity)
+    doc_similarity.analyze_result("doc_similarity_vec.txt", 19)
