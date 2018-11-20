@@ -18,11 +18,13 @@ class DocSimilarityCalculator:
         # self._max_doc_len = self.max_doc_length()
         self.doc_frequency = self.cal_doc_frequency()
         self.word_frequency_list = self.word_frequency_list()
+        self.all_docs_vector = self.build_doc_vector()
+        self.doc_vec_l2norm = self.save_doc_vec_l2norm()
 
     # def print_doc_attr(self):
     #     print("num_doc: ", self._num_doc, " max_doc_len: ", self._max_doc_len)
-        # print("doc_frequency: ", self.doc_frequency)
-        # print("doc_list:", self._doc_list)
+    # print("doc_frequency: ", self.doc_frequency)
+    # print("doc_list:", self._doc_list)
 
     def word_frequency_list(self):
         word_frequency_list = []
@@ -31,26 +33,75 @@ class DocSimilarityCalculator:
             word_frequency_list.append(doc_word_frequency)
         return word_frequency_list
 
-    def cal_two_docs_similarity(self, doc1_id, doc2_id):
-        doc1_word_frequency = self.word_frequency_list[doc1_id]
-        doc2_word_frequency = self.word_frequency_list[doc2_id]
-        union_wordlist = set(doc1_word_frequency.keys()).union(set(doc2_word_frequency.keys()))
+    def build_doc_vector(self):
+        """use dict structure to save the doc vector"""
+        all_docs_vector = []
+        for doc_idx, doc in enumerate(self._doc_list):
+            doc_vector_dict = dict()
+            for word in doc:
+                word_tf_idf = self.cal_tf_idf(word, self.word_frequency_list[doc_idx])
+                doc_vector_dict[word] = word_tf_idf
+            all_docs_vector.append(doc_vector_dict)
+        return all_docs_vector
 
-        doc1_vec = np.zeros(len(union_wordlist), dtype=np.float32)
-        doc2_vec = np.zeros(len(union_wordlist), dtype=np.float32)
-        for idx, word in enumerate(union_wordlist):
-            word_doc1_tf_idf = self.cal_tf_idf(word, doc1_word_frequency)
-            word_doc2_tf_idf = self.cal_tf_idf(word, doc2_word_frequency)
+    def save_doc_vec_l2norm(self):
+        """
+        to improve the efficiency and avoid repetitive computation,
+        we can save l2_norm of each doc vector which will be used in
+        cosine distance computation.
+        """
+        _all_docs_vector = self.build_doc_vector()
+        all_docs_vector_l2norm = []
+        for doc_vec in _all_docs_vector:
+            l2_norm = sum([i * i for i in doc_vec.values()]) ** 0.5
+            all_docs_vector_l2norm.append(l2_norm)
+        return all_docs_vector_l2norm
 
-            doc1_vec[idx] = word_doc1_tf_idf
-            doc2_vec[idx] = word_doc2_tf_idf
-        doc_similarity = cosine_distance(doc1_vec, doc2_vec)
-        # print(doc1)
-        # print(doc2)
-        # print(union_wordlist)
-        # print(doc1_vec)
-        # print(doc2_vec)
-        return doc_similarity
+    def cosine_distance(self, doc1_id: int, doc2_id: int):
+        """calculate cosine distance between two docs"""
+        doc1_vec, doc2_vec = self.all_docs_vector[doc1_id], self.all_docs_vector[doc2_id]
+        # print("doc1_id = ", doc1_id, doc1_vec)
+        # print("doc2_id = ", doc2_id, doc2_vec)
+        if len(doc1_vec) <= len(doc2_vec):
+            base_vec = doc1_vec
+            cmp_vec = doc2_vec
+        else:
+            base_vec = doc2_vec
+            cmp_vec = doc1_vec
+        inner_product = 0
+        for word in base_vec:
+            if word in cmp_vec:
+                inner_product += base_vec[word] * cmp_vec[word]
+        vec_norm_product = self.doc_vec_l2norm[doc1_id] * self.doc_vec_l2norm[doc2_id]
+        distance = 0
+        try:
+            distance = inner_product / vec_norm_product
+        except ZeroDivisionError as e:
+            print("doc1_id = ", doc1_id, doc1_vec, self._doc_list[doc1_id])
+            print("doc2_id = ", doc2_id, doc2_vec, self._doc_list[doc2_id])
+            print(e)
+        return distance
+
+    # def cal_two_docs_similarity(self, doc1_id: int, doc2_id: int):
+    #     doc1_word_frequency = self.word_frequency_list[doc1_id]
+    #     doc2_word_frequency = self.word_frequency_list[doc2_id]
+    #     union_wordlist = set(doc1_word_frequency.keys()).union(set(doc2_word_frequency.keys()))
+    #
+    #     doc1_vec = np.zeros(len(union_wordlist), dtype=np.float32)
+    #     doc2_vec = np.zeros(len(union_wordlist), dtype=np.float32)
+    #     for idx, word in enumerate(union_wordlist):
+    #         word_doc1_tf_idf = self.cal_tf_idf(word, doc1_word_frequency)
+    #         word_doc2_tf_idf = self.cal_tf_idf(word, doc2_word_frequency)
+    #
+    #         doc1_vec[idx] = word_doc1_tf_idf
+    #         doc2_vec[idx] = word_doc2_tf_idf
+    #     doc_similarity = cosine_distance(doc1_vec, doc2_vec)
+    #     # print(doc1)
+    #     # print(doc2)
+    #     # print(union_wordlist)
+    #     # print(doc1_vec)
+    #     # print(doc2_vec)
+    #     return doc_similarity
 
     def cal_all_docs_similarity(self):
         time_start = time.time()
@@ -61,7 +112,7 @@ class DocSimilarityCalculator:
             if i % 100 == 0:
                 print("processed %d, time %f" % (i, time.time() - time_start))
             for j in range(i):
-                doc_similarity = self.cal_two_docs_similarity(i, j)
+                doc_similarity = self.cosine_distance(i, j)
                 doc_similarity_vec[i][j] = doc_similarity_vec[j][i] = doc_similarity
         return doc_similarity_vec
 
@@ -133,10 +184,8 @@ class DocSimilarityCalculator:
 
 
 if __name__ == '__main__':
-    # test max_doc_length
     doc_similarity = DocSimilarityCalculator(DOCUMENT_FILE)
     # doc_similarity.print_doc_attr()
-    # print(doc_similarity._max_doc_len)
 
     # print(doc_similarity._num_doc)
 
@@ -151,8 +200,14 @@ if __name__ == '__main__':
     # doc_similarity_vec = doc_similarity.cal_doc_similarity()
     # print(doc_similarity_vec)
 
-    # test cal_doc_similarity
-    # docs_similarity = doc_similarity.cal_two_docs_similarity(doc_similarity._doc_list[0], doc_similarity._doc_list[1])
-    # print(docs_similarity)
-    all_doc_similarity = doc_similarity.cal_all_docs_similarity()
-    print(all_doc_similarity)
+    # test build_doc_vector
+    # all_docs_vector_ = doc_similarity.build_doc_vector()
+    # print(all_docs_vector_)
+
+    # test cosine distance
+    # cosine_distance = doc_similarity.cosine_distance(3, 1)
+    # print(cosine_distance)
+
+    # test cal_all_docs_similarity
+    all_docs_similarity = doc_similarity.cal_all_docs_similarity()
+    print(all_docs_similarity)

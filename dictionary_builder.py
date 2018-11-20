@@ -17,6 +17,8 @@ class DictionaryBuilder:
         with open(self.datafile, "r", encoding="utf-8") as f:
             for line in f.readlines():
                 line = line.strip().split("  ")[1:]
+                if len(line) == 0:
+                    continue
                 doc = []
                 for word_pos in line:
                     word = word_pos.split("/")[0]
@@ -25,6 +27,8 @@ class DictionaryBuilder:
                         continue
                     doc.append(word)
                     word_dict[word] = word_dict.get(word, 0) + 1
+                if len(doc) == 0:
+                    continue
                 doc_list.append(doc)
         return word_dict, doc_list
 
@@ -38,5 +42,6 @@ if __name__ == '__main__':
     db = DictionaryBuilder("data/199801_clear_1.txt")
     # test build_dictionary
     word_dict, doc_list = db.build_dictionary()
+
     # print(doc_list[:5])
-    print(db.max_word_frequency())
+    # print(db.max_word_frequency())
