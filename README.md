@@ -1,2 +1,16 @@
-我们使用向量空间模型(Vector Space Model, VSM)和潜在语义索引(Latent Semantic Indexing Model, LSI)模型对大约20000条文档进行文档间相似度的计算。
+We use Vector Space Model(VSM) and Latent Semantic Indexing(LSI) Model to calculate documents similarity based on one part of People's Daily corpora, which contains about 3,000 documents.
 
+# Data
+There are two files under `data` directory.
+* `199801_clear_1.txt` is the People's Daily corpora.
+* `small_data_for_test.txt` is a small dataset just for testing codes.
+
+# Data Preprocessing
+See `dictionary_builder.py`
+
+# Model
+## VSM
+See `doc_similarity.py`
+
+## LSI Model
+I will finish this part soon. :-)
