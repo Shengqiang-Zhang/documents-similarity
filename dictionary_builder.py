@@ -1,6 +1,3 @@
-import numpy as np
-
-
 class DictionaryBuilder:
     def __init__(self, datafile):
         self.datafile = datafile
@@ -43,5 +40,6 @@ if __name__ == '__main__':
     # test build_dictionary
     word_dict, doc_list = db.build_dictionary()
 
+    print(len(doc_list))
     # print(doc_list[:5])
     # print(db.max_word_frequency())
