@@ -30,6 +30,8 @@ class DictionaryBuilder:
                         continue
                     doc.append(word)
                     word_dict[word] = word_dict.get(word, 0) + 1
+            if len(doc) > 0:    # processing the end of file
+                doc_list.append(doc)
         return word_dict, doc_list
 
     def max_word_frequency(self):
