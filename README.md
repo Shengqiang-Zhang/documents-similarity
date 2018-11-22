@@ -10,7 +10,7 @@ See `dictionary_builder.py`
 
 # Model
 ## VSM
-See `doc_similarity.py`
+See `doc_similarity_VSM.py`
 
 ## LSI Model
-I will finish this part soon. :-)
+See `doc_similarity_LSI.py`
