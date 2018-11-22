@@ -8,7 +8,7 @@ DOCUMENT_FILE = "data/199801_clear_1.txt"
 DOCUMENT_FILE_TEST = "data/small_data_for_test.txt"  # datafile for testing
 
 
-class DocSimilarityCalculator:
+class DocSimilarityVSM:
     def __init__(self, datafile):
         self._word_dict, self._doc_list = DictionaryBuilder(datafile).build_dictionary()
         self._num_doc = len(self._doc_list)
@@ -142,7 +142,7 @@ class DocSimilarityCalculator:
 
 
 if __name__ == '__main__':
-    doc_similarity = DocSimilarityCalculator(DOCUMENT_FILE)
+    doc_similarity = DocSimilarityVSM(DOCUMENT_FILE)
     # doc_similarity.print_doc_attr()
 
     # print(doc_similarity._num_doc)
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     # print(cosine_distance)
 
     # test cal_all_docs_similarity
-    # all_docs_similarity = doc_similarity.cal_all_docs_similarity()
+    all_docs_similarity = doc_similarity.cal_all_docs_similarity()
     # print(all_docs_similarity)
-    # doc_similarity.write_vec_to_file("doc_similarity_vec.txt", all_docs_similarity)
-    doc_similarity.analyze_result("doc_similarity_vec.txt", 19)
+    doc_similarity.write_vec_to_file("doc_similarity_vec.txt", all_docs_similarity)
+    doc_similarity.analyze_result("doc_similarity_vec.txt", 29)
